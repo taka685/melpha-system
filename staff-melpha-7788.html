@@ -4,24 +4,40 @@
     <meta charset="UTF-8">
     <title>Melpha Control Panel - CREW ONLY</title>
     <style>
-        :root { --primary: #004080; --accent: #28a745; --bg: #121212; --card-bg: #1e1e1e; --text: #fff; }
+        :root { --primary: #004080; --accent: #28a745; --bg: #121212; --card-bg: #1e1e1e; --text: #fff; --add-bg: #252525; }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
         header { border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 30px; }
         .section-title { color: var(--accent); border-left: 5px solid var(--accent); padding-left: 10px; margin: 30px 0 15px; }
+        
+        /* 新設：個別追加セクション */
+        .add-box { background: var(--add-bg); border: 2px solid var(--accent); border-radius: 15px; padding: 25px; margin-bottom: 40px; }
+        .add-row { display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; }
+        
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
         .card { background: var(--card-bg); border-radius: 15px; padding: 20px; text-align: center; border: 1px solid #333; }
         .stock-input { width: 100%; font-size: 2.5rem; background: #000; border: 2px solid #444; color: var(--accent); text-align: center; border-radius: 10px; padding: 10px 0; }
-        .schedule-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        
         .time-input { width: 180px; font-size: 1.8rem; padding: 15px; background: #000; color: #fff; border: 1px solid #444; border-radius: 10px; text-align: center; }
-        .event-input { flex: 1; font-size: 1.8rem; padding: 15px; background: #000; color: #fff; border: 1px solid #444; border-radius: 10px; }
-        .btn { width: 100%; padding: 25px; font-size: 1.8rem; font-weight: bold; color: white; border: none; border-radius: 15px; cursor: pointer; margin-top: 15px; }
+        .event-input { flex: 1; min-width: 250px; font-size: 1.8rem; padding: 15px; background: #000; color: #fff; border: 1px solid #444; border-radius: 10px; }
+        
+        .btn { width: 100%; padding: 20px; font-size: 1.6rem; font-weight: bold; color: white; border: none; border-radius: 15px; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-add { background: var(--accent); border: 2px solid #fff; }
         .btn-stock { background: var(--primary); }
-        .btn-schedule { background: var(--accent); }
     </style>
 </head>
 <body>
     <header><h1>CREW CONTROL PANEL</h1></header>
     
+    <div class="add-box">
+        <h2 style="margin-top:0; color: var(--accent);">➕ 新しく予定を追加</h2>
+        <div class="add-row">
+            <input type="time" id="new-time" class="time-input">
+            <input type="text" id="new-event" class="event-input" placeholder="予定の内容（例：右手地区 到着）">
+        </div>
+        <button class="btn btn-add" onclick="addNewEvent()">この予定を個別に追加する</button>
+    </div>
+
     <h2 class="section-title">DRINK INVENTORY</h2>
     <div class="grid">
         <div class="card"><h3>🥤 コーラ</h3><input type="number" id="stock-コーラ" class="stock-input" value="24"></div>
@@ -31,19 +47,40 @@
     </div>
     <button class="btn btn-stock" onclick="updateStocks()">在庫を更新</button>
 
-    <h2 class="section-title">RUNNING SCHEDULE</h2>
-    <div id="schedule-fields">
-        <div class="schedule-row"><input type="time" class="time-input sched-time"><input type="text" class="event-input sched-event" placeholder="内容（例：津山駅 出発）"></div>
-        <div class="schedule-row"><input type="time" class="time-input sched-time"><input type="text" class="event-input sched-event"></div>
-        <div class="schedule-row"><input type="time" class="time-input sched-time"><input type="text" class="event-input sched-event"></div>
-        <div class="schedule-row"><input type="time" class="time-input sched-time"><input type="text" class="event-input sched-event"></div>
-        <div class="schedule-row"><input type="time" class="time-input sched-time"><input type="text" class="event-input sched-event"></div>
-    </div>
-    <button class="btn btn-schedule" onclick="updateSchedule()">運行予定を全更新</button>
-
 <script>
-    const STOCK_GAS_URL = "https://script.google.com/macros/s/AKfycbx-e_vL3tPvIne7Xmf68vz0jq-Hyb7UmL7TO79W7ugFSbJ4Gf6mHJV_TH-hqFaryotaXA/exec";
-    const SCHEDULE_GAS_URL = "https://script.google.com/macros/s/AKfycbwww1bX-0RGKppugkUQ0tfydXnVYLzh3Kl7BIkbLrPJmQKeInwOSrMq-YM9tkV1B4Ll/exec";
+    const SCHEDULE_GAS_URL = "https://script.google.com/macros/s/AKfycbw10y64_2j3hNASY-G3tKo_VN1rHwsYCiUoh0DdwuCu1ufffCqixQmhRq4rzDU4wCSL/exec";
+    const STOCK_GAS_URL = "https://script.google.com/macros/s/AKfycbwdIqFf4sdBLWPchI-ibV_EIO2z0WgRgmegXm7ipi2IeI6QQYtozvVAmVj8LP-GIqKYow/exec";
+
+    /**
+     * 【新機能】予定を1件ずつ個別に追加
+     */
+    async function addNewEvent() {
+        const time = document.getElementById('new-time').value;
+        const event = document.getElementById('new-event').value;
+        
+        if(!time || !event) {
+            alert("時刻と内容の両方を入力してください");
+            return;
+        }
+
+        if(!confirm("この予定を追加しますか？\n既存の予定は消えません。")) return;
+
+        try {
+            const response = await fetch(SCHEDULE_GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "add_event", 
+                    time: time, 
+                    event: event 
+                })
+            });
+            
+            alert("予定を追加しました！\n1分以内に自動で正しい順番に並び変わります。");
+            document.getElementById('new-event').value = ""; // 入力欄をクリア
+        } catch (e) {
+            alert("送信エラーが発生しました。ネット接続を確認してください。");
+        }
+    }
 
     async function updateStocks() {
         const stocks = {};
@@ -51,22 +88,6 @@
         if(!confirm("在庫を更新しますか？")) return;
         await fetch(STOCK_GAS_URL, { method: "POST", mode: "no-cors", body: JSON.stringify({ action: "update_all_stocks", stocks: stocks })});
         alert("在庫を更新しました");
-    }
-
-    async function updateSchedule() {
-        const times = document.querySelectorAll('.sched-time');
-        const events = document.querySelectorAll('.sched-event');
-        const data = [];
-        times.forEach((t, i) => { if(t.value || events[i].value) data.push({ time: t.value, event: events[i].value }); });
-        
-        if(!confirm("運行予定を上書き更新しますか？")) return;
-        try {
-            await fetch(SCHEDULE_GAS_URL, {
-                method: "POST", mode: "no-cors",
-                body: JSON.stringify({ action: "update_schedule", schedule: data })
-            });
-            alert("運行予定を更新しました");
-        } catch (e) { alert("送信エラー"); }
     }
 </script>
 </body>
