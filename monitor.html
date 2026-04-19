@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>今後の予定表 - Monitor</title>
+    <style>
+        :root {
+            --primary: #004080;
+            --accent: #28a745;
+            --bg: #000000; 
+            --text: #ffffff;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        /* タイトル部分のスタイル */
+        .title-text {
+            font-size: 3rem; /* 少し大きくしました */
+            letter-spacing: 8px; /* 文字の間隔を広げて高級感を出しました */
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .current-time {
+            font-size: 2.5rem;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+        }
+
+        .schedule-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            border-left: 15px solid var(--accent);
+        }
+
+        .time {
+            font-size: 5rem;
+            font-weight: bold;
+            min-width: 250px;
+            color: var(--text);
+        }
+
+        .event {
+            font-size: 3.5rem;
+            flex: 1;
+            padding-left: 40px;
+            border-left: 2px solid #444;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #empty-msg {
+            text-align: center;
+            font-size: 3rem;
+            margin-top: 100px;
+            color: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title-text">今後の予定表</div>
+        <div id="clock" class="current-time">00:00:00</div>
+    </header>
+
+    <div id="schedule-display" class="schedule-container">
+        <div id="empty-msg">運行予定を読み込み中...</div>
+    </div>
+
+    <script>
+        // 運行予定用のGAS URLを最新のものに貼り付けてください
+        const SCHEDULE_GAS_URL = "https://script.google.com/macros/s/AKfycbwww1bX-0RGKppugkUQ0tfydXnVYLzh3Kl7BIkbLrPJmQKeInwOSrMq-YM9tkV1B4Ll/exec"; 
+
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            const s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').innerText = `${h}:${m}:${s}`;
+        }
+        setInterval(updateClock, 1000);
+
+        async function fetchSchedule() {
+            try {
+                const res = await fetch(SCHEDULE_GAS_URL);
+                const data = await res.json();
+                const container = document.getElementById('schedule-display');
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div id="empty-msg">本日の予定はすべて終了しました</div>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(item => {
+                    html += `
+                        <div class="schedule-item">
+                            <div class="time">${item.time}</div>
+                            <div class="event">${item.event}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                console.error("取得エラー:", e);
+            }
+        }
+
+        fetchSchedule();
+        // 30秒ごとに自動更新
+        setInterval(fetchSchedule, 10000);
+    </script>
+</body>
+</html>
