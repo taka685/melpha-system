@@ -11,13 +11,22 @@
             --text: #ffffff;
         }
 
-        body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
             background: var(--bg);
             color: var(--text);
-            margin: 0;
-            padding: 40px;
-            overflow: hidden;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+        }
+
+        /* 画面全体のレイアウト */
+        body {
+            display: flex;
+            flex-direction: column;
+            padding: 20px 40px;
+            box-sizing: border-box;
         }
 
         header {
@@ -25,14 +34,13 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 4px solid var(--primary);
-            padding-bottom: 20px;
-            margin-bottom: 40px;
+            padding-bottom: 10px;
+            flex-shrink: 0; /* ヘッダーの高さは固定 */
         }
 
-        /* タイトル部分のスタイル */
         .title-text {
-            font-size: 3rem; /* 少し大きくしました */
-            letter-spacing: 8px; /* 文字の間隔を広げて高級感を出しました */
+            font-size: 2.5rem;
+            letter-spacing: 8px;
             font-weight: bold;
             color: #fff;
         }
@@ -43,41 +51,51 @@
             font-family: 'Courier New', monospace;
         }
 
+        /* 予定表示エリア：画面の残りの高さを埋める */
         .schedule-container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+            flex-grow: 1;
+            margin-top: 20px;
+            overflow: hidden;
         }
 
+        /* 各アイテム：3つ表示された時に均等な高さになるよう設定 */
         .schedule-item {
             display: flex;
             align-items: center;
             background: rgba(255, 255, 255, 0.05);
-            padding: 30px;
+            padding: 0 30px;
             border-radius: 20px;
-            border-left: 15px solid var(--accent);
+            border-left: 20px solid var(--accent);
+            flex: 1; /* 3つの要素を均等な高さにする */
+            min-height: 0; /* flexアイテムの縮小を許可 */
         }
 
         .time {
-            font-size: 5rem;
+            font-size: 8vh; /* 画面の高さに合わせて調整 */
             font-weight: bold;
-            min-width: 250px;
+            min-width: 280px;
             color: var(--text);
         }
 
         .event {
-            font-size: 3.5rem;
+            font-size: 7vh; /* 画面の高さに合わせて調整 */
             flex: 1;
             padding-left: 40px;
-            border-left: 2px solid #444;
-            white-space: nowrap;
+            border-left: 3px solid #444;
+            /* 長い文字でも見切れないように折り返しを許可、または調整 */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
+            line-height: 1.2;
         }
 
         #empty-msg {
             text-align: center;
-            font-size: 3rem;
+            font-size: 4rem;
             margin-top: 100px;
             color: #444;
         }
@@ -95,7 +113,6 @@
     </div>
 
     <script>
-        // 運行予定用のGAS URLを最新のものに貼り付けてください
         const SCHEDULE_GAS_URL = "https://script.google.com/macros/s/AKfycbwww1bX-0RGKppugkUQ0tfydXnVYLzh3Kl7BIkbLrPJmQKeInwOSrMq-YM9tkV1B4Ll/exec"; 
 
         function updateClock() {
@@ -118,8 +135,11 @@
                     return;
                 }
 
+                // 画面には最大3つだけ表示
+                const displayData = data.slice(0, 3);
+
                 let html = '';
-                data.forEach(item => {
+                displayData.forEach(item => {
                     html += `
                         <div class="schedule-item">
                             <div class="time">${item.time}</div>
@@ -134,7 +154,7 @@
         }
 
         fetchSchedule();
-        // 30秒ごとに自動更新
+        // 10秒ごとに自動更新（指示通り10000msに設定）
         setInterval(fetchSchedule, 10000);
     </script>
 </body>
